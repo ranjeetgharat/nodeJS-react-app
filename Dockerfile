@@ -5,6 +5,6 @@ RUN apt-get update
 
 WORKDIR /my-app
 
-COPY app.js /my-app/app.js
+COPY app.js /nodeJS-react-app/app.js
 
-CMD ["nginx" , "/my-app/app.js"]
+CMD ["nginx" , "/nodeJS-react-app/app.js"]
