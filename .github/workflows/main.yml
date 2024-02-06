@@ -1,0 +1,71 @@
+name: CICD pipeline 
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  cicd-pipeline:
+    name: cicd pipeline
+    runs-on: ubuntu-22.04
+  
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+
+    env:
+      INSTANCE_NAME: "my-react-vm"
+      ZONE: "asia-south1-b"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Authenticate with Google Cloud using WIF
+        uses: google-github-actions/auth@v1
+        with:
+          token_format: access_token
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER_ID }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set Project ID
+        run: |
+          PROJECT_ID=${{ secrets.GCP_PROJECT_ID }}
+          gcloud config set project $PROJECT_ID
+
+      - name: SSH into VM and Build Docker image
+        run: |
+          gcloud config set project react-app
+          gcloud compute ssh $INSTANCE_NAME --zone=$ZONE --command="
+            # Navigate to the project directory
+            cd /my-app
+
+            # Switch to superuser
+            #sudo su -
+
+            # Set up git configuration with your username and token
+            git config --global user.email "ranjitgharat18@gmail.com"
+            git config --global user.name "ranjeetgharat"
+            #git config --global credential.helper 'store --file ~/.git-credentials'
+            #echo "https://your_username:${{ secrets.GIT_TOKEN }}@github.com" > ~/.git-credentials
+            # Pull the latest code
+            git pull origin ranjeetgharat/nodeJS-react-app
+
+            # Build the Docker image
+            docker build -t react-app:${{ github.sha }} .
+          "
+
+      - name: SSH into VM and Manage Containers
+        run: |
+          gcloud compute ssh $INSTANCE_NAME --zone=$ZONE --command="
+            # Switch to superuser
+            sudo su -
+
+            # Delete the current container (if it exists)
+            docker rm -f react || true
+            
+            # Start a new container with the built image and pass environment variables from .env file
+            docker run -d --name react -p 8080:8080 react-app:${{ github.sha }}
+          "
