@@ -29,9 +29,10 @@ jobs:
         with:
           host: ${{ secrets.VM_HOST }}
           username: ${{ secrets.VM_USERNAME }}
-          password: ${{ secrets.VM_PASSWORD }}
+          password: ${{ secrets.GIT_TOKEN }}
           script: |
-            cd /path/to/your/app
+            mkdir react
+            cd /react 
             git pull origin main
             npm install
             npm run build
